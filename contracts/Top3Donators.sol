@@ -15,7 +15,7 @@ contract Top3Donators {
     //defined nr of topDonators=3, contract could be adapted with constructur and pushing alements on deploying, but rank arrangement would need to be changed then
     donators[3] top3Donators;
 
-    function spendAmount() public payable {
+    function donate() public payable {
         require(msg.value >= 1e15, "amount to low, spend at least 0.001eth");
         //check if address already exists
         if (mapSpentAmount[msg.sender] != 0) {
