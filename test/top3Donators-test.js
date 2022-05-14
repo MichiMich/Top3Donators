@@ -144,6 +144,31 @@ describe("top3Donators", function () {
 
   });
 
+
+
+  it("fire events, check if events are emited", async function () {
+    //new one at rank 0
+    await expect(top3Donators.connect(accounts[1]).donate({ value: (3 * 1e15) }))
+      .to.emit(top3Donators, 'topDonatorsUpdate');
+
+    //new one at rank 1
+    await expect(top3Donators.connect(accounts[2]).donate({ value: (2 * 1e15) }))
+      .to.emit(top3Donators, 'topDonatorsUpdate');
+
+    //new one at rank 2
+    await expect(top3Donators.connect(accounts[3]).donate({ value: (1 * 1e15) }))
+      .to.emit(top3Donators, 'topDonatorsUpdate');
+
+    //update on rank 0
+    await expect(top3Donators.connect(accounts[2]).donate({ value: (3 * 1e15) }))
+      .to.emit(top3Donators, 'topDonatorsUpdate');
+
+    //update on rank 2
+    await expect(top3Donators.connect(accounts[4]).donate({ value: (3 * 1e15) }))
+      .to.emit(top3Donators, 'topDonatorsUpdate');
+
+  });
+
   it("donate, organize, bring previous donator on top", async function () {
 
     await top3Donators.connect(accounts[1]).donate({ value: (2 * 1e15) });
@@ -159,8 +184,12 @@ describe("top3Donators", function () {
     expect(currentHighestDonators[1][0]).to.equal(accounts[2].address);
     expect(currentHighestDonators[2][0]).to.equal(accounts[1].address);
 
-    //now bring account[4] to the top number 2
-    await top3Donators.connect(accounts[4]).donate({ value: (2.5 * 1e15) }); //toal should be 29*e15 now
+    //now bring account[4] to the top number 2 and expect event gets fired
+    //await top3Donators.connect(accounts[4]).donate({ value: (2.5 * 1e15) }); //total should be 2.5*e15 now
+
+    await expect(top3Donators.connect(accounts[4]).donate({ value: (2.5 * 1e15) }))
+      .to.emit(top3Donators, 'topDonatorsUpdate');
+
 
     console.log("account 4 donated in total 3.5e15");
 
