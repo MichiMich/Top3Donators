@@ -6,7 +6,9 @@ describe("top3Donators", function () {
 
   beforeEach(async function () {
     accounts = await hre.ethers.getSigners();
-
+    for (let i = 0; i < accounts.length; i++) {
+      console.log("account ", i, ": ", accounts[i].address);
+    }
     Top3Donators = await hre.ethers.getContractFactory("Top3Donators");
     top3Donators = await Top3Donators.deploy();
 
@@ -21,7 +23,7 @@ describe("top3Donators", function () {
   });
 
 
-  it("one donate and correct rank", async function () {
+  it("one donation and correct rank", async function () {
     const addDonator = await top3Donators.donate({ value: 1e15 })
 
     await addDonator.wait();
@@ -102,6 +104,7 @@ describe("top3Donators", function () {
 
 
   it("update amount and rank organizing multiple times", async function () {
+
     let addDonator = 0;
     var accountCounter;
     for (accountCounter = 0; accountCounter < 9; ++accountCounter) {
@@ -138,6 +141,35 @@ describe("top3Donators", function () {
     expect(currentHighestDonators[1][1]).to.equal(ethers.utils.parseUnits("12", 15));
     expect(currentHighestDonators[2][0]).to.equal(accounts[0].address);
     expect(currentHighestDonators[2][1]).to.equal(ethers.utils.parseUnits("11", 15));
+
+  });
+
+  it("donate, organize, bring previous donator on top", async function () {
+
+    await top3Donators.connect(accounts[1]).donate({ value: (2 * 1e15) });
+    await top3Donators.connect(accounts[2]).donate({ value: (3 * 1e15) });
+    await top3Donators.connect(accounts[3]).donate({ value: (4 * 1e15) });
+
+    //this one will not come on top3 but should be registered
+    await top3Donators.connect(accounts[4]).donate({ value: (1 * 1e15) });
+
+    let currentHighestDonators = await top3Donators.getHighestDonators();
+    console.log("currentHighestDonators:\n", currentHighestDonators);
+    expect(currentHighestDonators[0][0]).to.equal(accounts[3].address);
+    expect(currentHighestDonators[1][0]).to.equal(accounts[2].address);
+    expect(currentHighestDonators[2][0]).to.equal(accounts[1].address);
+
+    //now bring account[4] to the top number 2
+    await top3Donators.connect(accounts[4]).donate({ value: (2.5 * 1e15) }); //toal should be 29*e15 now
+
+    console.log("account 4 donated in total 3.5e15");
+
+    currentHighestDonators = await top3Donators.getHighestDonators();
+
+    expect(currentHighestDonators[1][0]).to.equal(accounts[4].address);
+    expect(currentHighestDonators[1][1]).to.equal(3.5 * 1e15);
+    console.log("currentHighestDonators:\n", currentHighestDonators);
+
 
   });
 

@@ -22,7 +22,7 @@ module.exports = {
   solidity: "0.8.4",
   networks: {
     hardhat: {
-      loggingEnabled: true,
+      loggingEnabled: false,
     },
     rinkeby: {
       url: process.env.URL_RINKEBY,

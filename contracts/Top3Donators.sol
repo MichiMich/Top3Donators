@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 contract Top3Donators {
     //the mapping itself holds all data which interacted and spend eth -> need to check, erc721 maybe already has this
-    mapping(address => uint256) mapSpentAmount;
+    mapping(address => uint256) s_mappedSpentAmount;
 
     struct donators {
         address donatorAddress;
@@ -13,15 +13,15 @@ contract Top3Donators {
     event topDonatorsUpdate(donators[3] newTop3Donators);
 
     //defined nr of topDonators=3, contract could be adapted with constructur and pushing alements on deploying, but rank arrangement would need to be changed then
-    donators[3] topDonators;
+    donators[3] s_topDonators;
 
     function donate() public payable {
         require(msg.value >= 1e15, "amount to low, spend at least 0.001eth");
-        uint256 lengthTopDonators = topDonators.length; //gas reducing by linking it here and not checking .length multiple times
+        uint256 lengthTopDonators = s_topDonators.length; //gas reducing by linking it here and not checking .length multiple times
         //check if address already exists
-        if (mapSpentAmount[msg.sender] != 0) {
+        if (s_mappedSpentAmount[msg.sender] != 0) {
             //already interacted and send value, so we need to sum up
-            mapSpentAmount[msg.sender] += msg.value;
+            s_mappedSpentAmount[msg.sender] += msg.value;
 
             //search if already exists in top3
             uint256 foundIndexOfDonator = 0;
@@ -31,7 +31,7 @@ contract Top3Donators {
                 ++foundIndexOfDonator
             ) {
                 if (
-                    topDonators[foundIndexOfDonator].donatorAddress ==
+                    s_topDonators[foundIndexOfDonator].donatorAddress ==
                     msg.sender
                 ) {
                     //found under top3
@@ -40,25 +40,24 @@ contract Top3Donators {
             }
             if (foundIndexOfDonator < lengthTopDonators) {
                 //update existing
-                topDonators[foundIndexOfDonator].donatorValue = mapSpentAmount[
-                    msg.sender
-                ];
+                s_topDonators[foundIndexOfDonator]
+                    .donatorValue = s_mappedSpentAmount[msg.sender];
                 //update needs to lead to reorganizing
-                if (msg.sender != topDonators[0].donatorAddress) {
+                if (msg.sender != s_topDonators[0].donatorAddress) {
                     //reorganisation only needed if updated one is not on top place
                     reorganizeDonators();
                 }
                 return;
             }
         } else {
-            mapSpentAmount[msg.sender] = msg.value;
+            s_mappedSpentAmount[msg.sender] = msg.value;
         }
 
         //check if new spend amount is in the range of the first 3
         if (
-            mapSpentAmount[msg.sender] > topDonators[0].donatorValue ||
-            mapSpentAmount[msg.sender] > topDonators[1].donatorValue ||
-            mapSpentAmount[msg.sender] > topDonators[2].donatorValue
+            s_mappedSpentAmount[msg.sender] > s_topDonators[0].donatorValue ||
+            s_mappedSpentAmount[msg.sender] > s_topDonators[1].donatorValue ||
+            s_mappedSpentAmount[msg.sender] > s_topDonators[2].donatorValue
         ) {
             addNewHighestDonator();
         }
@@ -70,58 +69,62 @@ contract Top3Donators {
         //find highest value
         for (uint256 j = 0; j < 2; j++) {
             //there can only be one who does not fit in the sequence, so we can archive this by if and else if
-            if (topDonators[2].donatorValue > topDonators[0].donatorValue) {
-                tmp = topDonators[0];
-                topDonators[0] = topDonators[2];
-                topDonators[2] = tmp;
+            if (s_topDonators[2].donatorValue > s_topDonators[0].donatorValue) {
+                tmp = s_topDonators[0];
+                s_topDonators[0] = s_topDonators[2];
+                s_topDonators[2] = tmp;
             }
-            if (topDonators[2].donatorValue > topDonators[1].donatorValue) {
-                tmp = topDonators[1];
-                topDonators[1] = topDonators[2];
-                topDonators[2] = tmp;
+            if (s_topDonators[2].donatorValue > s_topDonators[1].donatorValue) {
+                tmp = s_topDonators[1];
+                s_topDonators[1] = s_topDonators[2];
+                s_topDonators[2] = tmp;
             }
-            if (topDonators[1].donatorValue > topDonators[0].donatorValue) {
-                tmp = topDonators[0];
-                topDonators[0] = topDonators[1];
-                topDonators[1] = tmp;
+            if (s_topDonators[1].donatorValue > s_topDonators[0].donatorValue) {
+                tmp = s_topDonators[0];
+                s_topDonators[0] = s_topDonators[1];
+                s_topDonators[1] = tmp;
             }
         }
 
-        emit topDonatorsUpdate(topDonators);
+        emit topDonatorsUpdate(s_topDonators);
     }
 
     function addNewHighestDonator() private {
         //check what rank needs to be updated, first come first serve, if you spend as much as nr1 you wont become nr1
-        if (mapSpentAmount[msg.sender] > topDonators[0].donatorValue) {
+        if (s_mappedSpentAmount[msg.sender] > s_topDonators[0].donatorValue) {
             //sender not in list yet, reorder all, [2] gets kicked out
-            topDonators[2].donatorValue = topDonators[1].donatorValue;
-            topDonators[2].donatorAddress = topDonators[1].donatorAddress;
+            s_topDonators[2].donatorValue = s_topDonators[1].donatorValue;
+            s_topDonators[2].donatorAddress = s_topDonators[1].donatorAddress;
 
-            topDonators[1].donatorValue = topDonators[0].donatorValue;
-            topDonators[1].donatorAddress = topDonators[0].donatorAddress;
+            s_topDonators[1].donatorValue = s_topDonators[0].donatorValue;
+            s_topDonators[1].donatorAddress = s_topDonators[0].donatorAddress;
 
-            topDonators[0].donatorValue = mapSpentAmount[msg.sender];
-            topDonators[0].donatorAddress = msg.sender;
-        } else if (mapSpentAmount[msg.sender] > topDonators[1].donatorValue) {
-            topDonators[2].donatorValue = topDonators[1].donatorValue;
-            topDonators[2].donatorAddress = topDonators[1].donatorAddress;
+            s_topDonators[0].donatorValue = s_mappedSpentAmount[msg.sender];
+            s_topDonators[0].donatorAddress = msg.sender;
+        } else if (
+            s_mappedSpentAmount[msg.sender] > s_topDonators[1].donatorValue
+        ) {
+            s_topDonators[2].donatorValue = s_topDonators[1].donatorValue;
+            s_topDonators[2].donatorAddress = s_topDonators[1].donatorAddress;
 
-            topDonators[1].donatorValue = mapSpentAmount[msg.sender];
-            topDonators[1].donatorAddress = msg.sender;
-        } else if (mapSpentAmount[msg.sender] > topDonators[2].donatorValue) {
-            topDonators[2].donatorValue = mapSpentAmount[msg.sender];
-            topDonators[2].donatorAddress = msg.sender;
+            s_topDonators[1].donatorValue = s_mappedSpentAmount[msg.sender];
+            s_topDonators[1].donatorAddress = msg.sender;
+        } else if (
+            s_mappedSpentAmount[msg.sender] > s_topDonators[2].donatorValue
+        ) {
+            s_topDonators[2].donatorValue = s_mappedSpentAmount[msg.sender];
+            s_topDonators[2].donatorAddress = msg.sender;
         }
 
-        emit topDonatorsUpdate(topDonators);
+        emit topDonatorsUpdate(s_topDonators);
     }
 
     function getHighestDonators() public view returns (donators[3] memory) {
-        return (topDonators);
+        return (s_topDonators);
     }
 
     function getMySpendAmount() public view returns (uint256) {
-        return mapSpentAmount[msg.sender];
+        return s_mappedSpentAmount[msg.sender];
     }
 
     function getSpendAmountOfGivenAddress(address _walletAddress)
@@ -130,6 +133,6 @@ contract Top3Donators {
         returns (uint256)
     {
         require(_walletAddress != address(0), "null address given");
-        return (mapSpentAmount[_walletAddress]);
+        return (s_mappedSpentAmount[_walletAddress]);
     }
 }
