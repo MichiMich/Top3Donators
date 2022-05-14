@@ -2,7 +2,7 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
 
-describe("addOneDonator", function () {
+describe("top3Donators", function () {
 
   beforeEach(async function () {
     accounts = await hre.ethers.getSigners();
@@ -16,7 +16,10 @@ describe("addOneDonator", function () {
   });
 
 
-  //toDo add revert if amount under 1e15
+  it("revert too low amount", async function () {
+    await expect(top3Donators.donate({ value: 1e14 })).to.be.reverted;
+  });
+
 
   it("one donate and correct rank", async function () {
     const addDonator = await top3Donators.donate({ value: 1e15 })
